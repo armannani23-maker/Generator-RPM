@@ -3,36 +3,50 @@ import { RPMData, GeneratedRPM } from "../types";
 
 const cleanJsonString = (input: string): string => {
   let cleaned = input.trim();
+  // Menghilangkan pembungkus markdown code block jika ada
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?/i, "").replace(/```$/i, "");
+  }
+  // Mencari karakter awal { dan akhir } untuk memastikan validitas JSON
+  const startIdx = cleaned.indexOf('{');
+  const endIdx = cleaned.lastIndexOf('}');
+  if (startIdx !== -1 && endIdx !== -1) {
+    cleaned = cleaned.substring(startIdx, endIdx + 1);
   }
   return cleaned.trim();
 };
 
 export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> => {
-  // Use a new instance of GoogleGenAI for each request to ensure the latest API key from process.env.API_KEY is used.
-  // The API key is assumed to be available and valid in the execution environment.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+    throw new Error("API_KEY tidak ditemukan. Pastikan Anda sudah menambahkannya di Environment Variables Vercel.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
-    Buatlah Rencana Pembelajaran Mendalam (RPM) profesional dengan komponen utama:
-    1. Identifikasi: Pemetaan pengetahuan awal, karakteristik materi, dan dimensi P5.
-    2. Desain Pembelajaran: Tujuan spesifik, topik, dan integrasi lintas disiplin.
-    3. Pengalaman Belajar (Siklus 3M): Memahami, Mengaplikasi, Merefleksi. Harus mencerminkan prinsip: Mindful (berkesadaran), Meaningful (bermakna), dan Joyful (menggembirakan).
-    4. Asesmen: Diagnostik (Awal), Formatif (Proses), dan Sumatif (Akhir).
-    5. Kemitraan & LKPD & Bacaan & Tindak Lanjut.
-
-    Data Input:
+    Bertindaklah sebagai Ahli Kurikulum Merdeka. Buatlah Rencana Pembelajaran Mendalam (RPM) yang sangat lengkap untuk:
     - Sekolah: ${data.satuanPendidikan}
-    - Mapel: ${data.mapel}
-    - Jenjang/Fase: ${data.jenjang} / ${data.fase}
-    - CP: ${data.cp}
-    - TP: ${data.tujuan}
+    - Mata Pelajaran: ${data.mapel}
+    - Kelas/Semester: ${data.kelas} / ${data.semester}
+    - Tujuan Pembelajaran: ${data.tujuan}
     - Model: ${data.praktikPedagogis}
     - Metode: ${data.metode.join(", ")}
-    - Profil P5: ${data.dimensiLulusan.join(", ")}
+    - Profil Pelajar Pancasila: ${data.dimensiLulusan.join(", ")}
 
-    OUTPUT HARUS JSON VALID. Jangan tambahkan teks lain.
+    KOMPONEN WAJIB (JSON):
+    1. identifikasi: pemetaanSiswa, karakteristikMateri, dimensiP5.
+    2. desain: tujuanSpesifik, topik (JUDUL BESAR), lintasDisiplin.
+    3. pengalamanBelajar: memahami, mengaplikasi, merefleksi, prinsipPedagogis (penjelasan 3M).
+    4. asesmen: awal, proses, akhir, kisiKisi, instrumen, rubrik.
+    5. kemitraan: string.
+    6. lkpd: judul, tujuan, ringkasanMateri, aktivitas (array: langkah, deskripsi), pertanyaanEksploratif (array string), kesimpulanAktivitas.
+    7. tindakLanjut: remedial, pengayaan.
+    8. bacaan: guru, siswa.
+
+    Pastikan bahasa yang digunakan profesional dan inspiratif.
+    PENTING: JANGAN BERIKAN TEKS PEMBUKA/PENUTUP. HANYA JSON.
   `;
 
   try {
@@ -40,7 +54,8 @@ export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> =
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        temperature: 0.7,
+        temperature: 0.8,
+        topP: 0.95,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -98,40 +113,53 @@ export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> =
                     type: Type.OBJECT,
                     properties: {
                       langkah: { type: Type.STRING },
-                      deskripsi: { type: Type.STRING } // Use 'deskripsi' to match the UI and interface
-                    }
+                      deskripsi: { type: Type.STRING }
+                    },
+                    required: ["langkah", "deskripsi"]
                   }
                 },
                 pertanyaanEksploratif: { type: Type.ARRAY, items: { type: Type.STRING } },
                 kesimpulanAktivitas: { type: Type.STRING }
-              }
+              },
+              required: ["judul", "tujuan", "ringkasanMateri", "aktivitas", "pertanyaanEksploratif", "kesimpulanAktivitas"]
             },
             tindakLanjut: {
               type: Type.OBJECT,
               properties: {
                 remedial: { type: Type.STRING },
                 pengayaan: { type: Type.STRING }
-              }
+              },
+              required: ["remedial", "pengayaan"]
             },
             bacaan: {
               type: Type.OBJECT,
               properties: {
                 guru: { type: Type.STRING },
                 siswa: { type: Type.STRING }
-              }
+              },
+              required: ["guru", "siswa"]
             }
           }
         }
       }
     });
 
-    // Access the generated text directly from the response.text property.
     const rawText = response.text;
-    if (!rawText) throw new Error("AI tidak memberikan respon.");
+    if (!rawText) throw new Error("AI memberikan respons kosong.");
     const cleanedText = cleanJsonString(rawText);
-    return JSON.parse(cleanedText) as GeneratedRPM;
+    const parsedData = JSON.parse(cleanedText);
+    
+    // Validasi data minimal
+    if (!parsedData.identifikasi || !parsedData.lkpd) {
+      throw new Error("Struktur data hasil AI tidak lengkap.");
+    }
+
+    return parsedData as GeneratedRPM;
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini API Error Detail:", error);
+    if (error.message?.includes("API_KEY")) {
+      throw new Error("Konfigurasi API_KEY tidak valid. Silakan cek Vercel Settings.");
+    }
     throw new Error(error.message || "Gagal memproses data AI.");
   }
 };
