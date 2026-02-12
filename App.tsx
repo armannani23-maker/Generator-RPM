@@ -160,20 +160,87 @@ const App: React.FC = () => {
 
   if (view === 'landing') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-indigo-900 p-6 text-white text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-400 rounded-full blur-[120px]"></div>
+      <div className="min-h-screen relative flex items-center justify-center overflow-hidden font-inter">
+        {/* Latar Belakang Gambar Guru Kreatif */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=2070" 
+            alt="Creative Teacher" 
+            className="w-full h-full object-cover scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/95 via-indigo-900/80 to-transparent"></div>
         </div>
-        <div className="max-w-4xl animate-in z-10">
-          <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter">RPM GENERATOR</h1>
-          <p className="text-xl md:text-2xl font-light mb-12 text-indigo-100 italic opacity-80">"Transformasi Pembelajaran yang Lebih Mendalam & Bermakna"</p>
-          <button 
-            onClick={() => setView('settings')}
-            className="bg-white text-indigo-950 px-12 py-6 rounded-full font-black text-xl hover:scale-105 transition-all shadow-2xl active:scale-95"
-          >
-            MULAI SEKARANG
-          </button>
+
+        <div className="container mx-auto px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
+          <div className="animate-in max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500/20 backdrop-blur-md border border-indigo-400/30 rounded-full text-indigo-200 text-xs font-black uppercase tracking-[0.2em] mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+              </span>
+              Digital Learning Innovation
+            </div>
+            
+            <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tighter leading-[0.9]">
+              SMEKSAM <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-indigo-100 italic">GENERATOR RPM</span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl font-light text-indigo-100/80 mb-10 leading-relaxed border-l-4 border-indigo-500 pl-6">
+              Membantu <span className="text-white font-bold">Guru Kreatif</span> menyusun Perencanaan Pembelajaran Mendalam secara instan, terstruktur, dan bermakna.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <button 
+                onClick={() => setView('settings')}
+                className="group relative bg-white text-indigo-950 px-10 py-5 rounded-2xl font-black text-xl hover:scale-105 transition-all shadow-[0_20px_50px_rgba(0,0,0,0.3)] active:scale-95 flex items-center gap-3 overflow-hidden w-full sm:w-auto justify-center"
+              >
+                <span className="relative z-10">MULAI SEKARANG</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:translate-x-1 transition-transform relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                <div className="absolute inset-0 bg-indigo-50 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+              </button>
+              
+              <div className="text-indigo-200/60 text-sm font-medium italic">
+                Cepat • Akurat • Sesuai Kurikulum Merdeka
+              </div>
+            </div>
+          </div>
+          
+          <div className="hidden lg:flex justify-end animate-in" style={{animationDelay: '0.2s'}}>
+            <div className="relative p-2 bg-white/10 backdrop-blur-2xl rounded-[3rem] border border-white/20 shadow-2xl">
+              <div className="bg-indigo-900/40 rounded-[2.5rem] p-8 max-w-md border border-white/10">
+                <div className="flex gap-2 mb-4">
+                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                </div>
+                <div className="space-y-4">
+                  <div className="h-4 bg-white/20 rounded-full w-3/4"></div>
+                  <div className="h-4 bg-white/10 rounded-full w-full"></div>
+                  <div className="h-4 bg-white/10 rounded-full w-5/6"></div>
+                  <div className="grid grid-cols-2 gap-4 pt-4">
+                    <div className="h-20 bg-indigo-500/20 rounded-2xl border border-indigo-400/20"></div>
+                    <div className="h-20 bg-indigo-500/20 rounded-2xl border border-indigo-400/20"></div>
+                  </div>
+                  <div className="h-10 bg-indigo-500/40 rounded-xl w-full mt-4"></div>
+                </div>
+              </div>
+              {/* Badge Dekoratif */}
+              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-3xl shadow-2xl flex items-center gap-3 animate-bounce">
+                <div className="bg-green-100 p-2 rounded-xl text-green-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="pr-4">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</p>
+                  <p className="text-sm font-bold text-slate-800">Ready to Generate</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -188,7 +255,7 @@ const App: React.FC = () => {
               <path d="M10.394 2.822a.75.75 0 00-.788 0l-7 4.2a.75.75 0 000 1.288l7 4.2a.75.75 0 00.788 0l7-4.2a.75.75 0 000-1.288l-7-4.2z" />
             </svg>
           </div>
-          <h1 className="text-xl font-black tracking-tighter">GENERATOR RPM</h1>
+          <h1 className="text-xl font-black tracking-tighter">SMEKSAM RPM</h1>
         </div>
         <nav className="flex gap-2">
           <button onClick={() => setView('settings')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${view === 'settings' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}>Identitas</button>
