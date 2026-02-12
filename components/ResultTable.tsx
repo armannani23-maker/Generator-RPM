@@ -36,24 +36,27 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
       <style>
         @page { size: A4; margin: 1.5cm 1.5cm; }
         body { font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.3; color: #000; }
-        table { border-collapse: collapse; width: 100%; margin-bottom: 12pt; table-layout: fixed; border: 1pt solid black; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 12pt; border: 1pt solid black; }
         th, td { border: 1pt solid black; padding: 6pt; text-align: left; vertical-align: top; }
         .no-border { border: none !important; }
-        .no-border td { border: none !important; }
+        .no-border td { border: none !important; padding: 0 !important; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
         .uppercase { text-transform: uppercase; }
         .underline { text-decoration: underline; }
         .section-break { page-break-after: always; margin-top: 30pt; }
-        .title { font-size: 14pt; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15pt; }
-        .page-header { margin-bottom: 20pt; border-bottom: 3pt double black; padding-bottom: 5pt; }
+        .title-container { text-align: center; margin-bottom: 20pt; }
+        .kop-table { width: 100%; border: none !important; border-bottom: 4pt double black !important; margin-bottom: 15pt; }
+        .kop-table td { border: none !important; padding: 2pt !important; vertical-align: middle; }
+        .logo-img { width: 80px; height: 80px; }
+        .header-text { text-align: center; }
       </style>
     `;
 
     const content = hiddenFullExportRef.current.innerHTML;
     const fullHtml = `
-      <html>
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
           <meta charset='utf-8'>
           ${styles}
@@ -73,33 +76,39 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
     URL.revokeObjectURL(url);
   };
 
+  // Helper untuk merender KOP Surat yang bisa digunakan di preview & export
+  const renderKopSurat = () => {
+    if (data.kopType === KopType.TanpaKop) return null;
+    return (
+      <div className="border-b-[4.5pt] border-double border-black pb-2 mb-6 kop-container">
+        <table className="w-full no-border kop-table" style={{ border: 'none', borderCollapse: 'collapse', width: '100%' }}>
+          <tbody>
+            <tr style={{ border: 'none' }}>
+              <td style={{ width: '15%', border: 'none', textAlign: 'left', padding: '0' }}>
+                {data.logoProvinsi && <img src={data.logoProvinsi} className="logo-img" style={{ width: '80px', height: '80px', objectFit: 'contain' }} alt="Logo Prov" />}
+              </td>
+              <td className="text-center header-text" style={{ width: '70%', border: 'none', padding: '0' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontWeight: 'bold', fontSize: '13pt', textTransform: 'uppercase', margin: '0', lineHeight: '1.2' }}>PEMERINTAH PROVINSI GORONTALO</p>
+                  <p style={{ fontWeight: 'bold', fontSize: '12pt', textTransform: 'uppercase', margin: '0', lineHeight: '1.2' }}>DINAS PENDIDIKAN DAN KEBUDAYAAN</p>
+                  <p style={{ fontWeight: 'bold', fontSize: '16pt', textTransform: 'uppercase', margin: '4pt 0', lineHeight: '1.1' }}>{data.satuanPendidikan}</p>
+                  <p style={{ fontSize: '9pt', fontStyle: 'italic', margin: '0', fontWeight: 'normal' }}>{data.manualHeader}</p>
+                </div>
+              </td>
+              <td style={{ width: '15%', border: 'none', textAlign: 'right', padding: '0' }}>
+                {data.logoSekolah && <img src={data.logoSekolah} className="logo-img" style={{ width: '80px', height: '80px', objectFit: 'contain' }} alt="Logo Sekolah" />}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   const renderHeaderHtml = (title: string) => (
     <div className="mb-6">
-      {data.kopType !== KopType.TanpaKop && (
-        <div className="border-b-[4.5pt] border-double border-black pb-2 mb-6">
-          <table className="w-full no-border" style={{ border: 'none', borderCollapse: 'collapse' }}>
-            <tbody>
-              <tr style={{ border: 'none' }}>
-                <td style={{ width: '15%', border: 'none', verticalAlign: 'middle', textAlign: 'left', padding: '0' }}>
-                  {data.logoProvinsi && <img src={data.logoProvinsi} style={{ width: '85px', height: '85px', objectFit: 'contain' }} alt="Logo Prov" />}
-                </td>
-                <td className="text-center" style={{ width: '70%', border: 'none', verticalAlign: 'middle', padding: '0' }}>
-                  <div className="flex flex-col items-center text-black">
-                    <p className="font-bold text-[13pt] uppercase leading-[1.1] m-0">PEMERINTAH PROVINSI GORONTALO</p>
-                    <p className="font-bold text-[12pt] uppercase leading-[1.1] m-0">DINAS PENDIDIKAN DAN KEBUDAYAAN</p>
-                    <p className="font-bold text-[16pt] uppercase leading-[1.1] my-1 tracking-tight">{data.satuanPendidikan}</p>
-                    <p className="text-[9pt] italic m-0 font-normal leading-tight">{data.manualHeader}</p>
-                  </div>
-                </td>
-                <td style={{ width: '15%', border: 'none', verticalAlign: 'middle', textAlign: 'right', padding: '0' }}>
-                  {data.logoSekolah && <img src={data.logoSekolah} style={{ width: '85px', height: '85px', objectFit: 'contain' }} alt="Logo Sekolah" />}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div className="text-center mb-8">
+      {renderKopSurat()}
+      <div className="text-center mb-8 title-container">
         <h3 className="font-bold text-[13pt] uppercase underline m-0">{title}</h3>
         <p className="text-[10pt] font-bold m-0 uppercase">TAHUN PELAJARAN {data.tahunPelajaran}</p>
       </div>
@@ -110,7 +119,7 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
     <div className="space-y-6">
       <table className="w-full border-collapse border border-black text-[10.5pt]">
         <tbody>
-          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center">I. KOMPONEN IDENTIFIKASI</td></tr>
+          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center" style={{ backgroundColor: '#f3f4f6' }}>I. KOMPONEN IDENTIFIKASI</td></tr>
           <tr><td className="p-2 w-[200px] font-bold">Pemetaan Siswa</td><td className="p-2 text-justify">{generated.identifikasi.pemetaanSiswa}</td></tr>
           <tr><td className="p-2 font-bold">Karakteristik Materi</td><td className="p-2 text-justify">{generated.identifikasi.karakteristikMateri}</td></tr>
           <tr><td className="p-2 font-bold">Profil Pelajar Pancasila</td><td className="p-2">{generated.identifikasi.dimensiP5}</td></tr>
@@ -119,7 +128,7 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
 
       <table className="w-full border-collapse border border-black text-[10.5pt]">
         <tbody>
-          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center">II. DESAIN PEMBELAJARAN</td></tr>
+          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center" style={{ backgroundColor: '#f3f4f6' }}>II. DESAIN PEMBELAJARAN</td></tr>
           <tr><td className="p-2 w-[200px] font-bold">Tujuan Pembelajaran</td><td className="p-2 text-justify">{generated.desain.tujuanSpesifik}</td></tr>
           <tr><td className="p-2 font-bold">Topik Utama</td><td className="p-2 font-bold uppercase">{generated.desain.topik}</td></tr>
           <tr><td className="p-2 font-bold">Lintas Disiplin</td><td className="p-2 text-justify">{generated.desain.lintasDisiplin}</td></tr>
@@ -129,7 +138,7 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
 
       <table className="w-full border-collapse border border-black text-[10.5pt]">
         <tbody>
-          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center">III. PENGALAMAN BELAJAR (3M)</td></tr>
+          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center" style={{ backgroundColor: '#f3f4f6' }}>III. PENGALAMAN BELAJAR (3M)</td></tr>
           <tr><td className="p-2 w-[200px] font-bold">Memahami (Understanding)</td><td className="p-2 text-justify">{generated.pengalamanBelajar.memahami}</td></tr>
           <tr><td className="p-2 font-bold">Mengaplikasi (Applying)</td><td className="p-2 text-justify">{generated.pengalamanBelajar.mengaplikasi}</td></tr>
           <tr><td className="p-2 font-bold">Merefleksi (Reflecting)</td><td className="p-2 text-justify">{generated.pengalamanBelajar.merefleksi}</td></tr>
@@ -143,7 +152,7 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
     <div className="space-y-6">
       <table className="w-full border-collapse border border-black text-[10.5pt]">
         <tbody>
-          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center">IV. ASESMEN BERKELANJUTAN</td></tr>
+          <tr className="bg-gray-100 font-bold uppercase"><td colSpan={2} className="p-2 text-center" style={{ backgroundColor: '#f3f4f6' }}>IV. ASESMEN BERKELANJUTAN</td></tr>
           <tr><td className="p-2 w-[200px] font-bold">Diagnostik (Awal)</td><td className="p-2">{generated.asesmen.awal}</td></tr>
           <tr><td className="p-2 font-bold">Formatif (Proses)</td><td className="p-2">{generated.asesmen.proses}</td></tr>
           <tr><td className="p-2 font-bold">Sumatif (Akhir)</td><td className="p-2">{generated.asesmen.akhir}</td></tr>
@@ -160,10 +169,10 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
   );
 
   const renderSignatures = () => (
-    <table className="w-full mt-12 no-border" style={{ border: 'none' }}>
+    <table className="w-full mt-12 no-border" style={{ border: 'none', width: '100%' }}>
       <tbody>
         <tr style={{ border: 'none' }}>
-          <td style={{ border: 'none', width: '50%' }}>
+          <td style={{ border: 'none', width: '50%', textAlign: 'left' }}>
             <p className="m-0">Mengetahui,</p>
             <p className="m-0 mb-20">Kepala Sekolah</p>
             <br /><br /><br />
@@ -207,7 +216,7 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
         </div>
       </div>
 
-      {/* Render Table for View */}
+      {/* Render Table for View (Preview) */}
       <div ref={tableRef} className="bg-white p-[1in] shadow-2xl rounded-sm border print:shadow-none print:p-0 min-h-[11.69in] max-w-[8.27in] mx-auto text-black selection:bg-indigo-100 overflow-hidden">
         {renderHeaderHtml(activeTab === 'Modul' ? 'Rencana Pembelajaran Mendalam (RPM)' : activeTab === 'LKPD' ? 'Lembar Kerja Peserta Didik (LKPD)' : activeTab === 'Asesmen' ? 'Instrumen Asesmen' : activeTab === 'Bacaan' ? 'Bahan Bacaan Literasi' : 'Tindak Lanjut')}
         
@@ -270,30 +279,62 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
         {renderSignatures()}
       </div>
 
-      {/* Hidden container for FULL Export */}
+      {/* Hidden container for FULL Export (Lengkap dengan KOP untuk setiap section) */}
       <div ref={hiddenFullExportRef} className="hidden">
-        <div className="title">RENCANA PEMBELAJARAN MENDALAM (RPM)</div>
+        {/* Modul Section */}
+        {renderHeaderHtml('Rencana Pembelajaran Mendalam (RPM)')}
         {renderModulContent()}
         <div className="section-break"></div>
-        <div className="title">ASESMEN PEMBELAJARAN</div>
+
+        {/* Asesmen Section */}
+        {renderHeaderHtml('Instrumen Asesmen')}
         {renderAsesmenContent()}
         <div className="section-break"></div>
-        <div className="title">LEMBAR KERJA PESERTA DIDIK (LKPD)</div>
-        <div className="text-center font-bold mb-4">{generated.lkpd.judul}</div>
-        <p><b>TUJUAN:</b> {generated.lkpd.tujuan}</p>
-        <p><b>RINGKASAN:</b> {generated.lkpd.ringkasanMateri}</p>
-        <table border={1}>
-          <tr style={{background: '#eee'}}><td>No</td><td>Aktivitas</td><td>Deskripsi</td></tr>
+
+        {/* LKPD Section */}
+        {renderHeaderHtml('Lembar Kerja Peserta Didik (LKPD)')}
+        <div style={{ textAlign: 'center', border: '2pt solid black', padding: '10pt', backgroundColor: '#f9fafb', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '15pt' }}>
+          {generated.lkpd.judul}
+        </div>
+        <table border={1} style={{ width: '100%', marginBottom: '15pt' }}>
+          <tr><td style={{ fontWeight: 'bold', width: '20%' }}>Tujuan</td><td>{generated.lkpd.tujuan}</td></tr>
+          <tr><td style={{ fontWeight: 'bold' }}>Ringkasan</td><td>{generated.lkpd.ringkasanMateri}</td></tr>
+        </table>
+        <h4 style={{ textTransform: 'uppercase', borderBottom: '1pt solid black', paddingBottom: '3pt' }}>A. Langkah Kerja</h4>
+        <table border={1} style={{ width: '100%' }}>
+          <tr style={{ backgroundColor: '#eeeeee', fontWeight: 'bold' }}>
+            <td style={{ width: '30pt', textAlign: 'center' }}>No</td>
+            <td>Aktivitas</td>
+            <td>Deskripsi</td>
+          </tr>
           {generated.lkpd.aktivitas.map((a, i) => (
-            <tr key={i}><td>{i+1}</td><td>{a.langkah}</td><td>{a.deskripsi}</td></tr>
+            <tr key={i}>
+              <td style={{ textAlign: 'center' }}>{i + 1}</td>
+              <td style={{ fontWeight: 'bold' }}>{a.langkah}</td>
+              <td>{a.deskripsi}</td>
+            </tr>
           ))}
         </table>
+        <h4 style={{ textTransform: 'uppercase', borderBottom: '1pt solid black', paddingBottom: '3pt', marginTop: '20pt' }}>B. Pertanyaan Eksploratif</h4>
+        {generated.lkpd.pertanyaanEksploratif.map((q, i) => (
+          <div key={i} style={{ marginBottom: '15pt' }}>
+            <p><b>{i + 1}. {q}</b></p>
+            <div style={{ border: '1pt solid #ccc', height: '50pt', width: '100%' }}></div>
+          </div>
+        ))}
         <div className="section-break"></div>
-        <div className="title">BAHAN BACAAN & TINDAK LANJUT</div>
-        <h3>Bacaan Guru:</h3><p>{generated.bacaan.guru}</p>
-        <h3>Bacaan Siswa:</h3><p>{generated.bacaan.siswa}</p>
-        <h3>Remedial:</h3><p>{generated.tindakLanjut.remedial}</p>
-        <h3>Pengayaan:</h3><p>{generated.tindakLanjut.pengayaan}</p>
+
+        {/* Bacaan & Tindak Lanjut Section */}
+        {renderHeaderHtml('Bahan Bacaan & Tindak Lanjut')}
+        <h3 style={{ textTransform: 'uppercase', borderBottom: '1pt solid black' }}>Bacaan Guru:</h3>
+        <p>{generated.bacaan.guru}</p>
+        <h3 style={{ textTransform: 'uppercase', borderBottom: '1pt solid black' }}>Bacaan Siswa:</h3>
+        <p>{generated.bacaan.siswa}</p>
+        <h3 style={{ textTransform: 'uppercase', borderBottom: '1pt solid black', color: '#b91c1c' }}>Program Remedial:</h3>
+        <p><i>{generated.tindakLanjut.remedial}</i></p>
+        <h3 style={{ textTransform: 'uppercase', borderBottom: '1pt solid black', color: '#15803d' }}>Program Pengayaan:</h3>
+        <p><i>{generated.tindakLanjut.pengayaan}</i></p>
+
         {renderSignatures()}
       </div>
     </div>
