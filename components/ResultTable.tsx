@@ -47,6 +47,7 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
         .underline { text-decoration: underline; }
         .section-break { page-break-after: always; margin-top: 30pt; }
         .title { font-size: 14pt; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15pt; }
+        .page-header { margin-bottom: 20pt; border-bottom: 3pt double black; padding-bottom: 5pt; }
       </style>
     `;
 
@@ -273,13 +274,15 @@ const ResultTable: React.FC<Props> = ({ data, generated }) => {
       <div ref={hiddenFullExportRef} className="hidden">
         <div className="title">RENCANA PEMBELAJARAN MENDALAM (RPM)</div>
         {renderModulContent()}
+        <div className="section-break"></div>
+        <div className="title">ASESMEN PEMBELAJARAN</div>
         {renderAsesmenContent()}
         <div className="section-break"></div>
         <div className="title">LEMBAR KERJA PESERTA DIDIK (LKPD)</div>
         <div className="text-center font-bold mb-4">{generated.lkpd.judul}</div>
-        <p><b>TUJUAN:</b> ${generated.lkpd.tujuan}</p>
-        <p><b>RINGKASAN:</b> ${generated.lkpd.ringkasanMateri}</p>
-        <table>
+        <p><b>TUJUAN:</b> {generated.lkpd.tujuan}</p>
+        <p><b>RINGKASAN:</b> {generated.lkpd.ringkasanMateri}</p>
+        <table border={1}>
           <tr style={{background: '#eee'}}><td>No</td><td>Aktivitas</td><td>Deskripsi</td></tr>
           {generated.lkpd.aktivitas.map((a, i) => (
             <tr key={i}><td>{i+1}</td><td>{a.langkah}</td><td>{a.deskripsi}</td></tr>

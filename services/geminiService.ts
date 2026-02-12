@@ -3,17 +3,41 @@ import { RPMData, GeneratedRPM } from "../types";
 
 const cleanJsonString = (input: string): string => {
   let cleaned = input.trim();
-  // Menghilangkan pembungkus markdown code block jika ada
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?/i, "").replace(/```$/i, "");
   }
-  // Mencari karakter awal { dan akhir } untuk memastikan validitas JSON
   const startIdx = cleaned.indexOf('{');
   const endIdx = cleaned.lastIndexOf('}');
   if (startIdx !== -1 && endIdx !== -1) {
     cleaned = cleaned.substring(startIdx, endIdx + 1);
   }
   return cleaned.trim();
+};
+
+// Fungsi untuk memastikan data tidak null agar tidak terjadi error di UI
+const validateAndFillMissing = (data: any): GeneratedRPM => {
+  const fallback = {
+    identifikasi: { pemetaanSiswa: "-", karakteristikMateri: "-", dimensiP5: "-" },
+    desain: { tujuanSpesifik: "-", topik: "-", lintasDisiplin: "-" },
+    pengalamanBelajar: { memahami: "-", mengaplikasi: "-", merefleksi: "-", prinsipPedagogis: "-" },
+    asesmen: { awal: "-", proses: "-", akhir: "-", kisiKisi: "-", instrumen: "-", rubrik: "-" },
+    kemitraan: "-",
+    lkpd: { judul: "-", tujuan: "-", ringkasanMateri: "-", aktivitas: [], pertanyaanEksploratif: [], kesimpulanAktivitas: "-" },
+    tindakLanjut: { remedial: "-", pengayaan: "-" },
+    bacaan: { guru: "-", siswa: "-" }
+  };
+
+  return {
+    ...fallback,
+    ...data,
+    identifikasi: { ...fallback.identifikasi, ...data.identifikasi },
+    desain: { ...fallback.desain, ...data.desain },
+    pengalamanBelajar: { ...fallback.pengalamanBelajar, ...data.pengalamanBelajar },
+    asesmen: { ...fallback.asesmen, ...data.asesmen },
+    lkpd: { ...fallback.lkpd, ...data.lkpd },
+    tindakLanjut: { ...fallback.tindakLanjut, ...data.tindakLanjut },
+    bacaan: { ...fallback.bacaan, ...data.bacaan }
+  };
 };
 
 export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> => {
@@ -26,27 +50,33 @@ export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> =
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
-    Bertindaklah sebagai Ahli Kurikulum Merdeka. Buatlah Rencana Pembelajaran Mendalam (RPM) yang sangat lengkap untuk:
+    Bertindaklah sebagai Konsultan Kurikulum Merdeka Senior. Buatlah Rencana Pembelajaran Mendalam (RPM) yang KOMPREHENSIF untuk:
     - Sekolah: ${data.satuanPendidikan}
     - Mata Pelajaran: ${data.mapel}
-    - Kelas/Semester: ${data.kelas} / ${data.semester}
-    - Tujuan Pembelajaran: ${data.tujuan}
-    - Model: ${data.praktikPedagogis}
+    - Jenjang/Kelas/Semester: ${data.jenjang} / ${data.kelas} / ${data.semester}
+    - Tujuan Pembelajaran Utama: ${data.tujuan}
+    - Model Pembelajaran: ${data.praktikPedagogis}
     - Metode: ${data.metode.join(", ")}
     - Profil Pelajar Pancasila: ${data.dimensiLulusan.join(", ")}
 
-    KOMPONEN WAJIB (JSON):
-    1. identifikasi: pemetaanSiswa, karakteristikMateri, dimensiP5.
-    2. desain: tujuanSpesifik, topik (JUDUL BESAR), lintasDisiplin.
-    3. pengalamanBelajar: memahami, mengaplikasi, merefleksi, prinsipPedagogis (penjelasan 3M).
-    4. asesmen: awal, proses, akhir, kisiKisi, instrumen, rubrik.
-    5. kemitraan: string.
-    6. lkpd: judul, tujuan, ringkasanMateri, aktivitas (array: langkah, deskripsi), pertanyaanEksploratif (array string), kesimpulanAktivitas.
-    7. tindakLanjut: remedial, pengayaan.
-    8. bacaan: guru, siswa.
+    SYARAT OUTPUT:
+    1. Harus dalam format JSON murni.
+    2. Gunakan Bahasa Indonesia yang sangat profesional dan inspiratif.
+    3. Pada bagian pengalamanBelajar, jelaskan langkah konkret yang mencerminkan prinsip "Mindful, Meaningful, Joyful".
+    4. Pada bagian asesmen, berikan kisi-kisi soal dan rubrik penilaian yang jelas.
+    5. LKPD harus berisi setidaknya 3 aktivitas eksploratif.
 
-    Pastikan bahasa yang digunakan profesional dan inspiratif.
-    PENTING: JANGAN BERIKAN TEKS PEMBUKA/PENUTUP. HANYA JSON.
+    STRUKTUR JSON YANG DIWAJIBKAN:
+    {
+      "identifikasi": { "pemetaanSiswa": "...", "karakteristikMateri": "...", "dimensiP5": "..." },
+      "desain": { "tujuanSpesifik": "...", "topik": "...", "lintasDisiplin": "..." },
+      "pengalamanBelajar": { "memahami": "...", "mengaplikasi": "...", "merefleksi": "...", "prinsipPedagogis": "..." },
+      "asesmen": { "awal": "...", "proses": "...", "akhir": "...", "kisiKisi": "...", "instrumen": "...", "rubrik": "..." },
+      "kemitraan": "...",
+      "lkpd": { "judul": "...", "tujuan": "...", "ringkasanMateri": "...", "aktivitas": [{"langkah": "...", "deskripsi": "..."}], "pertanyaanEksploratif": ["..."], "kesimpulanAktivitas": "..." },
+      "tindakLanjut": { "remedial": "...", "pengayaan": "..." },
+      "bacaan": { "guru": "...", "siswa": "..." }
+    }
   `;
 
   try {
@@ -54,8 +84,8 @@ export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> =
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        temperature: 0.8,
-        topP: 0.95,
+        temperature: 0.7,
+        maxOutputTokens: 4000,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -139,7 +169,8 @@ export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> =
               },
               required: ["guru", "siswa"]
             }
-          }
+          },
+          required: ["identifikasi", "desain", "pengalamanBelajar", "asesmen", "lkpd", "tindakLanjut", "bacaan"]
         }
       }
     });
@@ -149,17 +180,9 @@ export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> =
     const cleanedText = cleanJsonString(rawText);
     const parsedData = JSON.parse(cleanedText);
     
-    // Validasi data minimal
-    if (!parsedData.identifikasi || !parsedData.lkpd) {
-      throw new Error("Struktur data hasil AI tidak lengkap.");
-    }
-
-    return parsedData as GeneratedRPM;
+    return validateAndFillMissing(parsedData);
   } catch (error: any) {
     console.error("Gemini API Error Detail:", error);
-    if (error.message?.includes("API_KEY")) {
-      throw new Error("Konfigurasi API_KEY tidak valid. Silakan cek Vercel Settings.");
-    }
     throw new Error(error.message || "Gagal memproses data AI.");
   }
 };
