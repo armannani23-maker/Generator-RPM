@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { RPMData, GeneratedRPM } from "../types";
 
@@ -11,15 +10,17 @@ const cleanJsonString = (input: string): string => {
 };
 
 export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> => {
+  // Use a new instance of GoogleGenAI for each request to ensure the latest API key from process.env.API_KEY is used.
+  // The API key is assumed to be available and valid in the execution environment.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    Buatlah Rencana Pembelajaran Mendalam (RPM) profesional dengan 4 komponen utama:
+    Buatlah Rencana Pembelajaran Mendalam (RPM) profesional dengan komponen utama:
     1. Identifikasi: Pemetaan pengetahuan awal, karakteristik materi, dan dimensi P5.
     2. Desain Pembelajaran: Tujuan spesifik, topik, dan integrasi lintas disiplin.
     3. Pengalaman Belajar (Siklus 3M): Memahami, Mengaplikasi, Merefleksi. Harus mencerminkan prinsip: Mindful (berkesadaran), Meaningful (bermakna), dan Joyful (menggembirakan).
     4. Asesmen: Diagnostik (Awal), Formatif (Proses), dan Sumatif (Akhir).
-    5. Kemitraan: Kolaborasi dengan orang tua/komunitas.
+    5. Kemitraan & LKPD & Bacaan & Tindak Lanjut.
 
     Data Input:
     - Sekolah: ${data.satuanPendidikan}
@@ -97,38 +98,34 @@ export const generateRPMContent = async (data: RPMData): Promise<GeneratedRPM> =
                     type: Type.OBJECT,
                     properties: {
                       langkah: { type: Type.STRING },
-                      deskripsi: { type: Type.STRING }
-                    },
-                    required: ["langkah", "deskripsi"]
+                      deskripsi: { type: Type.STRING } // Use 'deskripsi' to match the UI and interface
+                    }
                   }
                 },
                 pertanyaanEksploratif: { type: Type.ARRAY, items: { type: Type.STRING } },
                 kesimpulanAktivitas: { type: Type.STRING }
-              },
-              required: ["judul", "tujuan", "ringkasanMateri", "aktivitas", "pertanyaanEksploratif", "kesimpulanAktivitas"]
+              }
             },
             tindakLanjut: {
               type: Type.OBJECT,
               properties: {
                 remedial: { type: Type.STRING },
                 pengayaan: { type: Type.STRING }
-              },
-              required: ["remedial", "pengayaan"]
+              }
             },
             bacaan: {
               type: Type.OBJECT,
               properties: {
                 guru: { type: Type.STRING },
                 siswa: { type: Type.STRING }
-              },
-              required: ["guru", "siswa"]
+              }
             }
-          },
-          required: ["identifikasi", "desain", "pengalamanBelajar", "asesmen", "kemitraan", "lkpd", "tindakLanjut", "bacaan"]
+          }
         }
       }
     });
 
+    // Access the generated text directly from the response.text property.
     const rawText = response.text;
     if (!rawText) throw new Error("AI tidak memberikan respon.");
     const cleanedText = cleanJsonString(rawText);

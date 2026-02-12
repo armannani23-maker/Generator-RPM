@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   EducationLevel, 
@@ -14,7 +13,15 @@ import {
 import { generateRPMContent } from './services/geminiService';
 import ResultTable from './components/ResultTable';
 
-type AppView = 'landing' | 'settings' | 'generator';
+// Fix: AIStudio type declaration must match the global definition provided by the environment.
+// The error indicated that aistudio is already defined as AIStudio on the Window object.
+declare global {
+  interface Window {
+    readonly aistudio: AIStudio;
+  }
+}
+
+type AppView = 'landing' | 'settings' | 'generator' | 'missing_key';
 
 const TAHUN_PELAJARAN_OPTIONS = [
   '2024/2025',
@@ -49,6 +56,21 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [rpmData, setRpmData] = useState<RPMData | null>(null);
   const [generated, setGenerated] = useState<GeneratedRPM | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(!!process.env.API_KEY);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if (!hasApiKey && window.aistudio) {
+        try {
+          const selected = await window.aistudio.hasSelectedApiKey();
+          if (selected) setHasApiKey(true);
+        } catch (e) {
+          console.debug("AI Studio bridge not available");
+        }
+      }
+    };
+    checkKey();
+  }, [hasApiKey]);
 
   useEffect(() => {
     let interval: any;
@@ -92,6 +114,14 @@ const App: React.FC = () => {
     kopType: KopType.Gambar,
     manualHeader: 'Jl. Bendungan Desa Paris Kec. Mootilango Kab. Gorontalo'
   });
+
+  const handleOpenKeySelector = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      setHasApiKey(true);
+      setView('landing');
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as any;
@@ -140,6 +170,10 @@ const App: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasApiKey && !window.aistudio) {
+      setError("API Key belum dikonfigurasi. Silakan atur di Environment Variables Vercel.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -153,11 +187,49 @@ const App: React.FC = () => {
         }
       }, 100);
     } catch (err: any) {
+      if (err.message?.includes("entity was not found") && window.aistudio) {
+        setHasApiKey(false);
+        setView('missing_key');
+      }
       setError(err.message || "Gagal membuat RPM. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
   };
+
+  if (view === 'missing_key' || (!hasApiKey && view !== 'landing' && !window.aistudio)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-8 text-white">
+        <div className="max-w-md text-center space-y-6 animate-in">
+          <div className="bg-red-500/20 p-6 rounded-full inline-block border border-red-500/50">
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0-6V9m0 12a9 9 0 110-18 9 9 0 010 18z" />
+             </svg>
+          </div>
+          <h2 className="text-3xl font-black tracking-tight">API Key Belum Terpasang</h2>
+          <p className="text-slate-400">Aplikasi memerlukan API Key Gemini untuk berfungsi. Silakan hubungkan API Key Anda.</p>
+          <div className="pt-4 space-y-4">
+            {window.aistudio && (
+              <button 
+                onClick={handleOpenKeySelector}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-indigo-500/20"
+              >
+                HUBUNGKAN API KEY
+              </button>
+            )}
+            <a 
+              href="https://aistudio.google.com/app/apikey" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block text-sm text-indigo-400 hover:underline font-bold"
+            >
+              Dapatkan API Key Gratis di Google AI Studio →
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'landing') {
     return (
@@ -305,7 +377,6 @@ const App: React.FC = () => {
 
         {view === 'generator' && (
            <div className="animate-in duration-700">
-             {/* Tombol Kembali */}
              <div className="no-print mb-6">
                 <button onClick={() => setView('landing')} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold transition-all text-sm group">
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:-translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
@@ -316,7 +387,6 @@ const App: React.FC = () => {
              </div>
 
              <form onSubmit={handleSubmit} className="no-print grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
-               {/* SEKSI STRUKTUR KURIKULUM (Kiri) */}
                <div className="space-y-12">
                   <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8 space-y-8">
                     <h3 className="text-2xl font-black text-indigo-700 uppercase tracking-tighter border-b pb-4 flex items-center gap-3">
@@ -324,7 +394,6 @@ const App: React.FC = () => {
                        Struktur Kurikulum
                     </h3>
 
-                    {/* Tahun Pelajaran (Moved here as requested) */}
                     <div className="space-y-2">
                        <label className="text-xs font-bold text-slate-400">Tahun Pelajaran</label>
                        <select name="tahunPelajaran" value={formData.tahunPelajaran} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold">
@@ -389,7 +458,6 @@ const App: React.FC = () => {
                   </div>
                </div>
 
-               {/* SEKSI DESAIN (Kanan) */}
                <div className="space-y-12">
                   <div className="bg-white rounded-[1rem] shadow-xl border border-slate-200 p-8 space-y-6">
                     <h3 className="text-xl font-black text-indigo-800 uppercase tracking-tight flex items-center gap-2">
@@ -397,10 +465,8 @@ const App: React.FC = () => {
                        DESAIN
                     </h3>
 
-                    {/* Mata Pelajaran */}
                     <input name="mapel" value={formData.mapel} onChange={handleInputChange} placeholder="Mata Pelajaran *" className="w-full bg-white border border-slate-300 rounded-md px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400" />
 
-                    {/* Tujuan Pembelajaran * */}
                     <textarea 
                       name="tujuan" 
                       value={formData.tujuan} 
@@ -409,7 +475,6 @@ const App: React.FC = () => {
                       className="w-full bg-white border border-slate-300 rounded-md px-4 py-3 text-sm h-32 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400" 
                     />
 
-                    {/* Topik / Materi (Opsional) */}
                     <input 
                       name="materi" 
                       value={formData.materi} 
@@ -418,7 +483,6 @@ const App: React.FC = () => {
                       className="w-full bg-white border border-slate-300 rounded-md px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400" 
                     />
 
-                    {/* Baris CP & Lintas Materi */}
                     <div className="grid grid-cols-2 gap-4">
                       <input 
                         name="cp" 
@@ -436,7 +500,6 @@ const App: React.FC = () => {
                       />
                     </div>
 
-                    {/* Baris Kemitraan & Pemanfaatan Digital */}
                     <div className="grid grid-cols-2 gap-4">
                       <input 
                         name="kemitraan" 
@@ -454,7 +517,6 @@ const App: React.FC = () => {
                       />
                     </div>
 
-                    {/* Pilih Model Pembelajaran * */}
                     <select 
                       name="praktikPedagogis" 
                       value={formData.praktikPedagogis} 
@@ -465,7 +527,6 @@ const App: React.FC = () => {
                       {Object.values(PedagogicalPractice).map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
 
-                    {/* Metode * (Checkbox List) */}
                     <div className="space-y-2">
                        <label className="text-sm font-medium text-slate-500">Metode *</label>
                        <div className="grid grid-cols-2 gap-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
@@ -483,7 +544,6 @@ const App: React.FC = () => {
                        </div>
                     </div>
 
-                    {/* Ruang Fisik / Ruang Virtual */}
                     <div className="flex items-center gap-6 pt-2">
                        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                           <input 
